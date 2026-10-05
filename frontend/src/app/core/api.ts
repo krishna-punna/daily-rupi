@@ -135,3 +135,54 @@ export class ExpenseApi {
     return firstValueFrom(this.http.delete(`/api/expenses/${id}`));
   }
 }
+
+export interface BudgetLine {
+  categoryId: number;
+  categoryName: string;
+  categoryActive: boolean;
+  /** Null when no budget is set for this category and month. */
+  budget: number | null;
+  spent: number;
+  /** Negative when over budget; null when no budget is set. */
+  remaining: number | null;
+}
+
+export interface MonthBudget {
+  /** yyyy-MM */
+  month: string;
+  totalBudget: number;
+  totalSpent: number;
+  unbudgetedSpent: number;
+  lines: BudgetLine[];
+}
+
+@Injectable({ providedIn: 'root' })
+export class BudgetApi {
+  private readonly http = inject(HttpClient);
+
+  /** month is yyyy-MM */
+  month(month: string): Promise<MonthBudget> {
+    return firstValueFrom(this.http.get<MonthBudget>(`/api/budgets/${month}`));
+  }
+
+  set(month: string, categoryId: number, amount: number): Promise<MonthBudget> {
+    return firstValueFrom(
+      this.http.put<MonthBudget>(`/api/budgets/${month}/categories/${categoryId}`, { amount }),
+    );
+  }
+
+  remove(month: string, categoryId: number): Promise<MonthBudget> {
+    return firstValueFrom(
+      this.http.delete<MonthBudget>(`/api/budgets/${month}/categories/${categoryId}`),
+    );
+  }
+
+  copyFromPreviousMonth(month: string): Promise<{ copied: number; month: MonthBudget }> {
+    return firstValueFrom(
+      this.http.post<{ copied: number; month: MonthBudget }>(
+        `/api/budgets/${month}/copy-previous`,
+        null,
+      ),
+    );
+  }
+}
