@@ -15,14 +15,14 @@ and reports come next.
 
 | Path | Contents |
 | --- | --- |
-| `backend/` | Spring Boot application (Java 21, Maven) |
-| `backend/src/main/resources/db/migration/` | Flyway migrations: `V1` login, `V2` master data with seed rows, `V3` payment methods and expenses, `V4` budgets |
-| `frontend/` | Angular application (login, change password, expenses, budgets, master data) |
+| `backend/` | Spring Boot application (Java 17, Maven) |
+| `backend/src/main/resources/db/migration/` | Flyway migrations: `V1` login, `V2` master data with seed rows, `V3` payment methods and expenses |
+| `frontend/` | Angular application (login, change password, expenses, master data) |
 | `db/setup.sql` | One-time script to create the MySQL schema and a least-privilege user |
 
 ## Run it
 
-1. Install Java 21, Maven and MySQL 8.
+1. Install Java 17 (or newer), Maven and MySQL 8.
 2. Edit `db/setup.sql`, replace `CHANGE_ME` with a strong password, and run it as MySQL root:
    `mysql -u root -p < db/setup.sql`
 3. Start the backend with the database credentials in environment variables
