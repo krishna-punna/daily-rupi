@@ -1,6 +1,7 @@
 package com.dailyrupi.expense;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -35,5 +36,10 @@ public final class ExpenseDtos {
     }
 
     public record PaymentMethodOption(Long id, String name) {
+    }
+
+    /** Totals up to now for today, the week starting Monday and the calendar month, by server local date. */
+    public record ExpenseSummary(LocalDate date, LocalDate weekStart, LocalDate monthStart,
+            BigDecimal today, BigDecimal week, BigDecimal month) {
     }
 }

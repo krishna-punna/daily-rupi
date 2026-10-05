@@ -6,6 +6,7 @@ import {
   CategoryNode,
   Expense,
   ExpenseApi,
+  ExpenseSummary,
   ItemNode,
   MasterDataApi,
   PaymentMethodOption,
@@ -26,7 +27,85 @@ function nowLocal(): string {
 @Component({
   selector: 'app-expenses-page',
   imports: [FormsModule, CurrencyPipe, DatePipe],
+  styles: `
+    .summary {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: -16px -16px 16px;
+      padding: 12px 16px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .stat {
+      min-width: 0;
+      padding: 10px 12px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+
+    .stat span,
+    .stat small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.25rem;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (max-width: 480px) {
+      .summary {
+        gap: 6px;
+        padding: 8px 16px;
+      }
+
+      .stat {
+        padding: 8px;
+      }
+
+      .stat strong {
+        font-size: 1rem;
+      }
+
+      .stat small {
+        display: none;
+      }
+    }
+  `,
   template: `
+    <section class="summary" aria-label="Spending summary">
+      <div class="stat">
+        <span>Today</span>
+        <strong>{{ summary?.today ?? 0 | currency: 'INR' : 'symbol' : digits(summary?.today) }}</strong>
+        <small>{{ summary?.date | date: 'EEE d MMM' }}</small>
+      </div>
+      <div class="stat">
+        <span>This week</span>
+        <strong>{{ summary?.week ?? 0 | currency: 'INR' : 'symbol' : digits(summary?.week) }}</strong>
+        <small>Since {{ summary?.weekStart | date: 'EEE d MMM' }}</small>
+      </div>
+      <div class="stat">
+        <span>This month</span>
+        <strong>{{ summary?.month ?? 0 | currency: 'INR' : 'symbol' : digits(summary?.month) }}</strong>
+        <small>{{ summary?.monthStart | date: 'MMMM yyyy' }}</small>
+      </div>
+    </section>
+
     <section class="card">
       <h1>{{ editing ? 'Edit expense' : 'Add expense' }}</h1>
 
@@ -200,6 +279,7 @@ export class ExpensesPage implements OnInit {
   protected categories: CategoryNode[] = [];
   protected paymentMethods: PaymentMethodOption[] = [];
   protected expenses: Expense[] = [];
+  protected summary: ExpenseSummary | null = null;
   protected page = 0;
   protected total = 0;
 
@@ -223,6 +303,11 @@ export class ExpensesPage implements OnInit {
 
   ngOnInit(): void {
     void this.load();
+  }
+
+  /** Whole rupees stay short on a phone; paise show only when there are some. */
+  protected digits(amount: number | undefined): string {
+    return Number.isInteger(amount ?? 0) ? '1.0-0' : '1.2-2';
   }
 
   protected subCategories(): SubCategoryNode[] {
@@ -377,9 +462,14 @@ export class ExpensesPage implements OnInit {
     }
   }
 
+  /** Also refreshes the summary, since every add, edit and delete can change it. */
   private async loadExpenses(): Promise<void> {
-    const result = await this.api.list(this.page, this.pageSize);
+    const [result, summary] = await Promise.all([
+      this.api.list(this.page, this.pageSize),
+      this.api.summary(),
+    ]);
     this.expenses = result.content;
     this.total = result.totalElements;
+    this.summary = summary;
   }
 }
