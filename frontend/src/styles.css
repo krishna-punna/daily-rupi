@@ -357,6 +357,61 @@ th {
   color: var(--off);
 }
 
+/* Budgets */
+
+.month-input {
+  width: auto;
+  max-width: 180px;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin-bottom: 12px;
+}
+
+.stats strong {
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.over {
+  color: var(--danger);
+}
+
+.budget-col {
+  width: 160px;
+}
+
+.budget-col input {
+  min-width: 110px;
+  min-height: 34px;
+  padding: 4px 8px;
+}
+
+.bar-col {
+  width: 140px;
+}
+
+.bar {
+  height: 8px;
+  margin-top: 8px;
+  background: var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.bar.over span {
+  background: var(--danger);
+}
+
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: 1fr;
@@ -364,5 +419,14 @@ th {
 
   .toolbar {
     flex-wrap: wrap;
+  }
+
+  .toolbar h1 {
+    flex-basis: 100%;
+  }
+
+  .month-input {
+    flex: 1;
+    max-width: none;
   }
 }
