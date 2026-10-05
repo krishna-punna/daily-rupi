@@ -6,9 +6,10 @@ A personal daily expenditure tracker: Angular frontend, Spring Boot backend, MyS
 Spring Boot API plus Angular screens. Budgets, standard (recurring) expenditures and
 reports come next.
 
-> This code was written without access to Maven Central or npm, so it has
-> **not been compiled or run yet**. Run `mvn test` and `npm install && npm start`
-> (see below) and report any failure before building on it.
+> Verified on 2026-10-05: `mvn test` passes, and the backend was run against
+> MySQL 8.4 (Flyway migrations, first-login password change, master data and
+> expense create, edit and delete). The Angular screens build but have not been
+> clicked through in a browser yet.
 
 ## What is here
 
