@@ -187,3 +187,57 @@ export class BudgetApi {
     );
   }
 }
+
+export interface DayTotal {
+  /** yyyy-MM-dd */
+  date: string;
+  total: number;
+}
+
+export interface MonthTotal {
+  /** yyyy-MM */
+  month: string;
+  total: number;
+}
+
+export interface PaymentMethodTotal {
+  name: string;
+  total: number;
+  count: number;
+}
+
+export interface ItemTotal {
+  itemId: number;
+  itemName: string;
+  categoryName: string | null;
+  total: number;
+  count: number;
+}
+
+/**
+ * Stats for one month by the server's local date. days runs up to today for the current
+ * month and is empty for a future one; previousSamePeriod covers the same number of days at
+ * the start of the previous month; recentMonths is the six months ending with this one.
+ */
+export interface MonthDashboard {
+  month: string;
+  total: number;
+  count: number;
+  dailyAverage: number;
+  previousSamePeriod: number;
+  previousMonthTotal: number;
+  days: DayTotal[];
+  recentMonths: MonthTotal[];
+  paymentMethods: PaymentMethodTotal[];
+  topItems: ItemTotal[];
+}
+
+@Injectable({ providedIn: 'root' })
+export class DashboardApi {
+  private readonly http = inject(HttpClient);
+
+  /** month is yyyy-MM */
+  month(month: string): Promise<MonthDashboard> {
+    return firstValueFrom(this.http.get<MonthDashboard>(`/api/dashboard/${month}`));
+  }
+}

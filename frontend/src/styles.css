@@ -63,6 +63,7 @@ h2 {
 
 .topbar nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -427,6 +428,7 @@ th {
 
   .month-input {
     flex: 1;
+    min-width: 0;
     max-width: none;
   }
 }
