@@ -2,19 +2,21 @@
 
 A personal daily expenditure tracker: Angular frontend, Spring Boot backend, MySQL database.
 
-**Status:** backend foundation only. Login, roles and the Category > Sub Category > Item
-master data are in place. Expenses, budgets, reports and the Angular app come next.
+**Status:** login, master data management and expense entry work end to end in code:
+Spring Boot API plus Angular screens. Budgets, standard (recurring) expenditures and
+reports come next.
 
-> The code in this commit was written without access to Maven Central, so it has
-> **not been compiled or run yet**. Run `mvn test` first (see below) and report any
-> failure before building on it.
+> This code was written without access to Maven Central or npm, so it has
+> **not been compiled or run yet**. Run `mvn test` and `npm install && npm start`
+> (see below) and report any failure before building on it.
 
 ## What is here
 
 | Path | Contents |
 | --- | --- |
 | `backend/` | Spring Boot application (Java 21, Maven) |
-| `backend/src/main/resources/db/migration/` | Flyway migrations: `V1` login tables, `V2` master data with seed rows |
+| `backend/src/main/resources/db/migration/` | Flyway migrations: `V1` login, `V2` master data with seed rows, `V3` payment methods and expenses |
+| `frontend/` | Angular application (login, change password, expenses, master data) |
 | `db/setup.sql` | One-time script to create the MySQL schema and a least-privilege user |
 
 ## Run it
@@ -34,6 +36,33 @@ master data are in place. Expenses, budgets, reports and the Angular app come ne
 
 Flyway creates the tables on first start. The API listens on `http://127.0.0.1:8080`
 and is not reachable from other devices.
+
+## Run the screens
+
+With the backend running, in a second terminal (Node.js 20.19 or newer):
+
+```
+cd frontend
+npm install
+npm start
+```
+
+Open `http://localhost:4200`. The dev server forwards `/api` calls to the backend,
+so the browser only ever talks to one origin.
+
+| Screen | What you can do |
+| --- | --- |
+| Expenses | Pick category, sub category and item from dropdowns, enter amount, date and time, and how you paid. Edit or delete recent expenses. |
+| Master data | Add, rename, delete and switch any category, sub category or item between active and inactive. Search the tree. |
+
+Rules worth knowing:
+
+- Date and time default to now. Earlier dates are allowed, future ones are refused
+  by both the screen and the API.
+- Inactive entries, and everything beneath an inactive parent, are left out of the
+  expense dropdowns. The API also refuses them for new expenses.
+- An item with expenses recorded against it cannot be deleted, only made inactive.
+  A category or sub category cannot be deleted while it still has children.
 
 ## Run the tests
 
@@ -74,8 +103,16 @@ change you are logged out and log in again with the new password.
 | POST | `/api/auth/logout` | logged in | Ends the session |
 | GET | `/api/auth/me` | logged in | Username, roles, whether a password change is due |
 | PUT | `/api/auth/password` | logged in | JSON `currentPassword`, `newPassword` |
-| GET | `/api/master-data` | USER | Full category tree |
-| POST | `/api/master-data/categories` | USER | Add a custom category: JSON `name` |
-| POST | `/api/master-data/categories/{id}/sub-categories` | USER | Add a custom sub category |
-| POST | `/api/master-data/sub-categories/{id}/items` | USER | Add a custom item |
+| GET | `/api/master-data` | USER | Active category tree; `?includeInactive=true` for everything |
+| POST | `/api/master-data/categories` | USER | Add a category: JSON `name` |
+| POST | `/api/master-data/categories/{id}/sub-categories` | USER | Add a sub category |
+| POST | `/api/master-data/sub-categories/{id}/items` | USER | Add an item |
+| PUT | `/api/master-data/{level}/{id}` | USER | Rename; level is `categories`, `sub-categories` or `items` |
+| PATCH | `/api/master-data/{level}/{id}/status` | USER | JSON `active`: true or false |
+| DELETE | `/api/master-data/{level}/{id}` | USER | Delete if nothing depends on it |
+| GET | `/api/payment-methods` | USER | Active payment methods |
+| GET | `/api/expenses?page=&size=` | USER | Expenses, newest first |
+| POST | `/api/expenses` | USER | JSON `itemId`, `paymentMethodId`, `amount`, `spentAt`, `note` |
+| PUT | `/api/expenses/{id}` | USER | Edit an expense |
+| DELETE | `/api/expenses/{id}` | USER | Delete an expense |
 | GET | `/api/admin/audit-log` | ADMIN | Recent security events |

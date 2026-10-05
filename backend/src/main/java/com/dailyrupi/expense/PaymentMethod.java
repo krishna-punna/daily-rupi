@@ -1,4 +1,4 @@
-package com.dailyrupi.masterdata;
+package com.dailyrupi.expense;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,30 +8,23 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "categories")
-public class Category {
+@Table(name = "payment_methods")
+public class PaymentMethod {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 80)
+    @Column(nullable = false, length = 40)
     private String name;
 
     @Column(name = "sort_order", nullable = false)
     private int sortOrder = 1000;
 
-    @Column(name = "is_default", nullable = false)
-    private boolean defaultEntry;
-
     @Column(nullable = false)
     private boolean active = true;
 
-    protected Category() {
-    }
-
-    public Category(String name) {
-        this.name = name;
+    protected PaymentMethod() {
     }
 
     public Long getId() {
@@ -42,23 +35,7 @@ public class Category {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public int getSortOrder() {
-        return sortOrder;
-    }
-
-    public boolean isDefaultEntry() {
-        return defaultEntry;
-    }
-
     public boolean isActive() {
         return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
     }
 }

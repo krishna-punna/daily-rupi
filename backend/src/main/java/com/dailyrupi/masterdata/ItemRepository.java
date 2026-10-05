@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ItemRepository extends JpaRepository<Item, Long> {
 
-    List<Item> findByActiveTrueOrderByIdAsc();
+    List<Item> findAllByOrderByIdAsc();
+
+    boolean existsBySubCategoryId(Long subCategoryId);
 
     boolean existsBySubCategoryIdAndNameIgnoreCase(Long subCategoryId, String name);
 }
