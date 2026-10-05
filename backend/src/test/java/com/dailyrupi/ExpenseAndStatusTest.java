@@ -2,6 +2,7 @@ package com.dailyrupi;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -11,6 +12,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -135,6 +138,38 @@ class ExpenseAndStatusTest {
 
         mvc.perform(delete("/api/expenses/" + expense).with(csrf())).andExpect(status().isNoContent());
         mvc.perform(delete("/api/expenses/" + expense).with(csrf())).andExpect(status().isNotFound());
+    }
+
+    private BigDecimal[] summaryTotals() throws Exception {
+        String body = mvc.perform(get("/api/expenses/summary")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.today").value(LocalDate.now().toString()))
+                .andReturn().getResponse().getContentAsString();
+        return new BigDecimal[] {
+                new BigDecimal(JsonPath.read(body, "$.todayTotal").toString()),
+                new BigDecimal(JsonPath.read(body, "$.weekTotal").toString()),
+                new BigDecimal(JsonPath.read(body, "$.monthTotal").toString()) };
+    }
+
+    @Test
+    void summaryTotalsTodayWeekAndMonth() throws Exception {
+        long category = create("/api/master-data/categories", "Sum Cat");
+        long subCategory = create("/api/master-data/categories/" + category + "/sub-categories", "Sum Sub");
+        long item = create("/api/master-data/sub-categories/" + subCategory + "/items", "Sum Item");
+        long payment = firstPaymentMethod();
+
+        // Other tests share the database, so compare before and after.
+        BigDecimal[] before = summaryTotals();
+        mvc.perform(json(post("/api/expenses"), expenseJson(item, payment, "120.25", LocalDateTime.now())))
+                .andExpect(status().isCreated());
+        // Older than any month or week: counted nowhere.
+        mvc.perform(json(post("/api/expenses"),
+                expenseJson(item, payment, "999", LocalDateTime.now().minusDays(40))))
+                .andExpect(status().isCreated());
+        BigDecimal[] after = summaryTotals();
+
+        for (int i = 0; i < 3; i++) {
+            assertEquals(0, after[i].subtract(before[i]).compareTo(new BigDecimal("120.25")));
+        }
     }
 
     @Test

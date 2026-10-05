@@ -1,6 +1,7 @@
 package com.dailyrupi.expense;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,6 +33,11 @@ public final class ExpenseDtos {
     }
 
     public record ExpensePage(List<ExpenseResponse> content, int page, int size, long totalElements) {
+    }
+
+    /** Totals for the server's current day, week (Monday to Sunday) and calendar month. */
+    public record ExpenseSummary(LocalDate today, LocalDate weekStart, LocalDate monthStart,
+            BigDecimal todayTotal, BigDecimal weekTotal, BigDecimal monthTotal) {
     }
 
     public record PaymentMethodOption(Long id, String name) {

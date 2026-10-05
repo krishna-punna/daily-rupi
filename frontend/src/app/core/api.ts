@@ -56,6 +56,16 @@ export interface ExpensePage {
   totalElements: number;
 }
 
+/** Totals for the server's today, week (from Monday) and month; dates are yyyy-MM-dd. */
+export interface ExpenseSummary {
+  today: string;
+  weekStart: string;
+  monthStart: string;
+  todayTotal: number;
+  weekTotal: number;
+  monthTotal: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class MasterDataApi {
   private readonly http = inject(HttpClient);
@@ -107,6 +117,10 @@ export class ExpenseApi {
 
   list(page: number, size: number): Promise<ExpensePage> {
     return firstValueFrom(this.http.get<ExpensePage>('/api/expenses', { params: { page, size } }));
+  }
+
+  summary(): Promise<ExpenseSummary> {
+    return firstValueFrom(this.http.get<ExpenseSummary>('/api/expenses/summary'));
   }
 
   create(body: ExpenseRequest): Promise<Expense> {

@@ -6,6 +6,7 @@ import {
   CategoryNode,
   Expense,
   ExpenseApi,
+  ExpenseSummary,
   ItemNode,
   MasterDataApi,
   PaymentMethodOption,
@@ -27,6 +28,26 @@ function nowLocal(): string {
   selector: 'app-expenses-page',
   imports: [FormsModule, CurrencyPipe, DatePipe],
   template: `
+    @if (summary; as s) {
+      <section class="summary" aria-label="Spending summary">
+        <div class="stat">
+          <span class="stat-label">This month</span>
+          <strong class="stat-value">{{ s.monthTotal | currency: 'INR' : 'symbol' : digits(s.monthTotal) }}</strong>
+          <span class="stat-range">{{ s.monthStart | date: 'MMM yyyy' }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">This week</span>
+          <strong class="stat-value">{{ s.weekTotal | currency: 'INR' : 'symbol' : digits(s.weekTotal) }}</strong>
+          <span class="stat-range">From {{ s.weekStart | date: 'EEE d MMM' }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Today</span>
+          <strong class="stat-value">{{ s.todayTotal | currency: 'INR' : 'symbol' : digits(s.todayTotal) }}</strong>
+          <span class="stat-range">{{ s.today | date: 'EEE d MMM' }}</span>
+        </div>
+      </section>
+    }
+
     <section class="card">
       <h1>{{ editing ? 'Edit expense' : 'Add expense' }}</h1>
 
@@ -202,6 +223,7 @@ export class ExpensesPage implements OnInit {
   protected expenses: Expense[] = [];
   protected page = 0;
   protected total = 0;
+  protected summary: ExpenseSummary | null = null;
 
   protected categoryId: number | null = null;
   protected subCategoryId: number | null = null;
@@ -220,6 +242,11 @@ export class ExpensesPage implements OnInit {
   protected busy = false;
 
   protected readonly now = nowLocal;
+
+  /** Paise only below ₹10,000, so a large total still fits a phone-width tile. */
+  protected digits(amount: number): string {
+    return Number.isInteger(amount) || amount >= 10000 ? '1.0-0' : '1.2-2';
+  }
 
   ngOnInit(): void {
     void this.load();
@@ -377,9 +404,14 @@ export class ExpensesPage implements OnInit {
     }
   }
 
+  /** Reloads the summary too, since every add, edit and delete ends here. */
   private async loadExpenses(): Promise<void> {
-    const result = await this.api.list(this.page, this.pageSize);
+    const [result, summary] = await Promise.all([
+      this.api.list(this.page, this.pageSize),
+      this.api.summary(),
+    ]);
     this.expenses = result.content;
     this.total = result.totalElements;
+    this.summary = summary;
   }
 }
