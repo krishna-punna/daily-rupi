@@ -2,13 +2,14 @@
 
 A personal daily expenditure tracker: Angular frontend, Spring Boot backend, MySQL database.
 
-**Status:** login, master data management and expense entry work end to end in code:
-Spring Boot API plus Angular screens. Budgets, standard (recurring) expenditures and
-reports come next.
+**Status:** login, master data management, expense entry and monthly budgets work end
+to end in code: Spring Boot API plus Angular screens. Standard (recurring) expenditures
+and reports come next.
 
-> This code was written without access to Maven Central or npm, so it has
-> **not been compiled or run yet**. Run `mvn test` and `npm install && npm start`
-> (see below) and report any failure before building on it.
+> Verified on 2026-10-05: `mvn test` passes, and the backend was run against
+> MySQL 8.4 (Flyway migrations, first-login password change, master data and
+> expense create, edit and delete). The Angular screens build but have not been
+> clicked through in a browser yet.
 
 ## What is here
 
@@ -53,6 +54,7 @@ so the browser only ever talks to one origin.
 | Screen | What you can do |
 | --- | --- |
 | Expenses | Pick category, sub category and item from dropdowns, enter amount, date and time, and how you paid. Edit or delete recent expenses. |
+| Budgets | Pick a month and set a spending limit per category. See spent, left and a usage bar per category, with overspends in red. Copy last month's budgets in one click. |
 | Master data | Add, rename, delete and switch any category, sub category or item between active and inactive. Search the tree. |
 
 Rules worth knowing:
@@ -61,6 +63,11 @@ Rules worth knowing:
   by both the screen and the API.
 - Inactive entries, and everything beneath an inactive parent, are left out of the
   expense dropdowns. The API also refuses them for new expenses.
+- A budget belongs to one category and one month. Spending counts toward the month of
+  its date. Spending in a category with no budget is shown separately as unbudgeted.
+- An inactive category keeps any budget it already has but cannot be given a new one.
+  Copying last month's budgets skips inactive categories and never overwrites a budget
+  already set.
 - An item with expenses recorded against it cannot be deleted, only made inactive.
   A category or sub category cannot be deleted while it still has children.
 
@@ -115,4 +122,8 @@ change you are logged out and log in again with the new password.
 | POST | `/api/expenses` | USER | JSON `itemId`, `paymentMethodId`, `amount`, `spentAt`, `note` |
 | PUT | `/api/expenses/{id}` | USER | Edit an expense |
 | DELETE | `/api/expenses/{id}` | USER | Delete an expense |
+| GET | `/api/budgets/{yyyy-MM}` | USER | Budget, spent and left per category for the month, with totals |
+| PUT | `/api/budgets/{yyyy-MM}/categories/{id}` | USER | Set a category's budget: JSON `amount` |
+| DELETE | `/api/budgets/{yyyy-MM}/categories/{id}` | USER | Remove a category's budget |
+| POST | `/api/budgets/{yyyy-MM}/copy-previous` | USER | Copy last month's budgets into categories that have none |
 | GET | `/api/admin/audit-log` | ADMIN | Recent security events |
