@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: daily-rupi
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/daily_rupi?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata}
+    # No defaults on purpose: the app refuses to start without credentials.
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none   # Flyway owns the schema
+  flyway:
+    enabled: true
+
+server:
+  address: 127.0.0.1   # reachable from this computer only
+  port: 8080
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+    include-exception: false
+  servlet:
+    session:
+      timeout: 30m
+      tracking-modes: cookie
+      cookie:
+        http-only: true
+        same-site: strict
+        # Chrome and Firefox accept Secure cookies on http://localhost.
+        # Set COOKIE_SECURE=false only if your browser does not.
+        secure: ${COOKIE_SECURE:true}
+
+dailyrupi:
+  security:
+    max-failed-attempts: 5
+    lock-minutes: 15
+    bcrypt-strength: 12
