@@ -1,6 +1,9 @@
 package com.dailyrupi.expense;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -10,6 +13,7 @@ import com.dailyrupi.common.ApiException;
 import com.dailyrupi.expense.ExpenseDtos.ExpensePage;
 import com.dailyrupi.expense.ExpenseDtos.ExpenseRequest;
 import com.dailyrupi.expense.ExpenseDtos.ExpenseResponse;
+import com.dailyrupi.expense.ExpenseDtos.ExpenseSummary;
 import com.dailyrupi.expense.ExpenseDtos.PaymentMethodOption;
 import com.dailyrupi.masterdata.Category;
 import com.dailyrupi.masterdata.CategoryRepository;
@@ -62,6 +66,19 @@ public class ExpenseService {
         Lookup lookup = new Lookup();
         return new ExpensePage(result.getContent().stream().map(lookup::toResponse).toList(),
                 safePage, safeSize, result.getTotalElements());
+    }
+
+    /** Future-dated expenses cannot exist, so each total runs to the start of tomorrow. */
+    @Transactional(readOnly = true)
+    public ExpenseSummary summary() {
+        LocalDate today = LocalDate.now();
+        LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate monthStart = today.withDayOfMonth(1);
+        LocalDateTime end = today.plusDays(1).atStartOfDay();
+        return new ExpenseSummary(today, weekStart, monthStart,
+                expenses.sumBetween(today.atStartOfDay(), end),
+                expenses.sumBetween(weekStart.atStartOfDay(), end),
+                expenses.sumBetween(monthStart.atStartOfDay(), end));
     }
 
     @Transactional

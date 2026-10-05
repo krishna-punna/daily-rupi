@@ -5,6 +5,7 @@ import java.util.List;
 import com.dailyrupi.expense.ExpenseDtos.ExpensePage;
 import com.dailyrupi.expense.ExpenseDtos.ExpenseRequest;
 import com.dailyrupi.expense.ExpenseDtos.ExpenseResponse;
+import com.dailyrupi.expense.ExpenseDtos.ExpenseSummary;
 import com.dailyrupi.expense.ExpenseDtos.PaymentMethodOption;
 
 import jakarta.validation.Valid;
@@ -41,6 +42,11 @@ public class ExpenseController {
     public ExpensePage list(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return service.list(page, size);
+    }
+
+    @GetMapping("/expenses/summary")
+    public ExpenseSummary summary() {
+        return service.summary();
     }
 
     @PostMapping("/expenses")

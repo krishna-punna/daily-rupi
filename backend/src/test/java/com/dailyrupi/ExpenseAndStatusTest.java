@@ -1,5 +1,6 @@
 package com.dailyrupi;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -11,6 +12,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -100,6 +104,39 @@ class ExpenseAndStatusTest {
         // The API refuses it too, not only the dropdown.
         mvc.perform(json(post("/api/expenses"), expenseJson(item, payment, "10.00", LocalDateTime.now())))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INACTIVE_ITEM"));
+    }
+
+    private static BigDecimal summaryTotal(String body, String field) {
+        return new BigDecimal(String.valueOf((Object) JsonPath.read(body, "$." + field)));
+    }
+
+    @Test
+    void summaryTotalsTodayWeekAndMonth() throws Exception {
+        long category = create("/api/master-data/categories", "Summary Cat");
+        long subCategory = create("/api/master-data/categories/" + category + "/sub-categories", "Summary Sub");
+        long item = create("/api/master-data/sub-categories/" + subCategory + "/items", "Summary Item");
+        long payment = firstPaymentMethod();
+        LocalDate today = LocalDate.now();
+
+        String before = mvc.perform(get("/api/expenses/summary")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.date").value(today.toString()))
+                .andExpect(jsonPath("$.weekStart").value(today.with(DayOfWeek.MONDAY).toString()))
+                .andExpect(jsonPath("$.monthStart").value(today.withDayOfMonth(1).toString()))
+                .andReturn().getResponse().getContentAsString();
+
+        // Today counts in all three; 40 days ago is before this week and this month.
+        mvc.perform(json(post("/api/expenses"), expenseJson(item, payment, "120.25", LocalDateTime.now())))
+                .andExpect(status().isCreated());
+        mvc.perform(json(post("/api/expenses"),
+                expenseJson(item, payment, "999", LocalDateTime.now().minusDays(40))))
+                .andExpect(status().isCreated());
+
+        String after = mvc.perform(get("/api/expenses/summary")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        for (String field : new String[] {"today", "week", "month"}) {
+            assertThat(summaryTotal(after, field).subtract(summaryTotal(before, field)))
+                    .as(field).isEqualByComparingTo("120.25");
+        }
     }
 
     @Test
