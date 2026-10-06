@@ -17,7 +17,7 @@ and reports come next.
 | --- | --- |
 | `backend/` | Spring Boot application (Java 17, Maven) |
 | `backend/src/main/resources/db/migration/` | Flyway migrations: `V1` login, `V2` master data with seed rows, `V3` payment methods and expenses |
-| `frontend/` | Angular application (login, change password, expenses, master data) |
+| `frontend/` | Angular application (login, change password, dashboard, expenses, budgets, master data) |
 | `db/setup.sql` | One-time script to create the MySQL schema and a least-privilege user |
 
 ## Run it

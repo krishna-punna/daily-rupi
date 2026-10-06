@@ -13,6 +13,7 @@ import {
   SubCategoryNode,
 } from '../core/api';
 import { messageOf } from '../core/api-error.interceptor';
+import { SummaryTiles } from './summary-tiles';
 
 /** Current local date and time in the format a datetime-local input uses. */
 function nowLocal(): string {
@@ -26,85 +27,26 @@ function nowLocal(): string {
 
 @Component({
   selector: 'app-expenses-page',
-  imports: [FormsModule, CurrencyPipe, DatePipe],
+  imports: [FormsModule, CurrencyPipe, DatePipe, SummaryTiles],
   styles: `
     .summary {
       position: sticky;
       top: 0;
       z-index: 10;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
       margin: -16px -16px 16px;
       padding: 12px 16px;
       background: var(--bg);
       border-bottom: 1px solid var(--line);
     }
 
-    .stat {
-      min-width: 0;
-      padding: 10px 12px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-    }
-
-    .stat span,
-    .stat small {
-      display: block;
-      color: var(--muted);
-      font-size: 0.8rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .stat strong {
-      display: block;
-      font-size: 1.25rem;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
     @media (max-width: 480px) {
       .summary {
-        gap: 6px;
         padding: 8px 16px;
-      }
-
-      .stat {
-        padding: 8px;
-      }
-
-      .stat strong {
-        font-size: 1rem;
-      }
-
-      .stat small {
-        display: none;
       }
     }
   `,
   template: `
-    <section class="summary" aria-label="Spending summary">
-      <div class="stat">
-        <span>Today</span>
-        <strong>{{ summary?.today ?? 0 | currency: 'INR' : 'symbol' : digits(summary?.today) }}</strong>
-        <small>{{ summary?.date | date: 'EEE d MMM' }}</small>
-      </div>
-      <div class="stat">
-        <span>This week</span>
-        <strong>{{ summary?.week ?? 0 | currency: 'INR' : 'symbol' : digits(summary?.week) }}</strong>
-        <small>Since {{ summary?.weekStart | date: 'EEE d MMM' }}</small>
-      </div>
-      <div class="stat">
-        <span>This month</span>
-        <strong>{{ summary?.month ?? 0 | currency: 'INR' : 'symbol' : digits(summary?.month) }}</strong>
-        <small>{{ summary?.monthStart | date: 'MMMM yyyy' }}</small>
-      </div>
-    </section>
+    <app-summary-tiles class="summary" [summary]="summary" />
 
     <section class="card">
       <h1>{{ editing ? 'Edit expense' : 'Add expense' }}</h1>
@@ -306,10 +248,6 @@ export class ExpensesPage implements OnInit {
   }
 
   /** Whole rupees stay short on a phone; paise show only when there are some. */
-  protected digits(amount: number | undefined): string {
-    return Number.isInteger(amount ?? 0) ? '1.0-0' : '1.2-2';
-  }
-
   protected subCategories(): SubCategoryNode[] {
     return this.categories.find((c) => c.id === this.categoryId)?.subCategories ?? [];
   }

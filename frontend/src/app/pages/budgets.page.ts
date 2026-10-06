@@ -4,18 +4,7 @@ import { FormsModule } from '@angular/forms';
 
 import { BudgetApi, BudgetLine, MonthBudget } from '../core/api';
 import { messageOf } from '../core/api-error.interceptor';
-
-/** yyyy-MM for the current local month. */
-function thisMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function shiftMonth(month: string, by: number): string {
-  const [year, m] = month.split('-').map(Number);
-  const d = new Date(year, m - 1 + by, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
+import { shiftMonth, thisMonth } from '../core/months';
 
 @Component({
   selector: 'app-budgets-page',

@@ -2,6 +2,7 @@ package com.dailyrupi.expense;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -10,6 +11,9 @@ import org.springframework.data.repository.query.Param;
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     boolean existsByItemId(Long itemId);
+
+    /** Expenses from {@code from} (inclusive) to {@code to} (exclusive). */
+    List<Expense> findBySpentAtGreaterThanEqualAndSpentAtLessThan(LocalDateTime from, LocalDateTime to);
 
     /** Total spent from {@code from} (inclusive) to {@code to} (exclusive); zero when nothing was spent. */
     @Query("select coalesce(sum(e.amount), 0) from Expense e where e.spentAt >= :from and e.spentAt < :to")

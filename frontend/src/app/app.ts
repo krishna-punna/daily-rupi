@@ -12,6 +12,7 @@ import { AuthService } from './core/auth.service';
       @if (auth.user(); as user) {
         @if (!user.passwordChangeRequired) {
           <nav>
+            <a routerLink="/dashboard" routerLinkActive="current">Dashboard</a>
             <a routerLink="/expenses" routerLinkActive="current">Expenses</a>
             <a routerLink="/budgets" routerLinkActive="current">Budgets</a>
             <a routerLink="/master-data" routerLinkActive="current">Master data</a>
