@@ -10,6 +10,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.dailyrupi.common.ApiException;
+import com.dailyrupi.expense.ExpenseDtos.DeletedExpense;
+import com.dailyrupi.expense.ExpenseDtos.ExpenseChanges;
 import com.dailyrupi.expense.ExpenseDtos.ExpensePage;
 import com.dailyrupi.expense.ExpenseDtos.ExpenseRequest;
 import com.dailyrupi.expense.ExpenseDtos.ExpenseResponse;
@@ -35,15 +37,21 @@ public class ExpenseService {
     /** Tolerance for the browser clock running slightly ahead of the server. */
     private static final long CLOCK_SKEW_MINUTES = 1;
 
+    /** How far each changes window overlaps the previous one; see {@link ExpenseChanges}. */
+    private static final long SYNC_OVERLAP_SECONDS = 60;
+
     private final ExpenseRepository expenses;
+    private final ExpenseDeletionRepository deletions;
     private final PaymentMethodRepository paymentMethods;
     private final CategoryRepository categories;
     private final SubCategoryRepository subCategories;
     private final ItemRepository items;
 
-    public ExpenseService(ExpenseRepository expenses, PaymentMethodRepository paymentMethods,
-            CategoryRepository categories, SubCategoryRepository subCategories, ItemRepository items) {
+    public ExpenseService(ExpenseRepository expenses, ExpenseDeletionRepository deletions,
+            PaymentMethodRepository paymentMethods, CategoryRepository categories,
+            SubCategoryRepository subCategories, ItemRepository items) {
         this.expenses = expenses;
+        this.deletions = deletions;
         this.paymentMethods = paymentMethods;
         this.categories = categories;
         this.subCategories = subCategories;
@@ -68,6 +76,22 @@ public class ExpenseService {
                 safePage, safeSize, result.getTotalElements());
     }
 
+    @Transactional(readOnly = true)
+    public ExpenseChanges changes(LocalDateTime since) {
+        LocalDateTime nextSince = LocalDateTime.now().minusSeconds(SYNC_OVERLAP_SECONDS);
+        Lookup lookup = new Lookup();
+        if (since == null) {
+            List<ExpenseResponse> all = expenses.findAll(Sort.by(Sort.Order.asc("id"))).stream()
+                    .map(lookup::toResponse).toList();
+            return new ExpenseChanges(nextSince, all, List.of());
+        }
+        List<ExpenseResponse> changed = expenses.findByUpdatedAtGreaterThanEqualOrderByUpdatedAtAscIdAsc(since)
+                .stream().map(lookup::toResponse).toList();
+        List<DeletedExpense> deleted = deletions.findByDeletedAtGreaterThanEqual(since).stream()
+                .map(d -> new DeletedExpense(d.getExpenseId(), d.getClientId())).toList();
+        return new ExpenseChanges(nextSince, changed, deleted);
+    }
+
     /** Future-dated expenses cannot exist, so each total runs to the start of tomorrow. */
     @Transactional(readOnly = true)
     public ExpenseSummary summary() {
@@ -83,11 +107,23 @@ public class ExpenseService {
 
     @Transactional
     public ExpenseResponse create(ExpenseRequest request) {
+        String clientId = request.clientId() == null ? null : request.clientId().toLowerCase();
+        if (clientId != null) {
+            // A retry of a create that already reached the server: answer with what was saved.
+            var saved = expenses.findByClientId(clientId);
+            if (saved.isPresent()) {
+                return new Lookup().toResponse(saved.get());
+            }
+            if (deletions.existsByClientId(clientId)) {
+                throw new ApiException(HttpStatus.GONE, "DELETED", "This expense was deleted");
+            }
+        }
         requireNotFuture(request.spentAt());
         requireUsableItem(request.itemId());
         requireUsablePaymentMethod(request.paymentMethodId());
 
         Expense expense = new Expense();
+        expense.setClientId(clientId);
         apply(expense, request);
         return new Lookup().toResponse(expenses.save(expense));
     }
@@ -110,7 +146,9 @@ public class ExpenseService {
 
     @Transactional
     public void delete(Long id) {
-        expenses.delete(expenses.findById(id).orElseThrow(ExpenseService::notFound));
+        Expense expense = expenses.findById(id).orElseThrow(ExpenseService::notFound);
+        deletions.save(new ExpenseDeletion(expense));
+        expenses.delete(expense);
     }
 
     private static void apply(Expense expense, ExpenseRequest request) {
@@ -178,7 +216,8 @@ public class ExpenseService {
                     subCategory == null ? null : subCategory.getId(),
                     subCategory == null ? null : subCategory.getName(),
                     e.getItemId(), item == null ? null : item.getName(),
-                    e.getPaymentMethodId(), method == null ? null : method.getName());
+                    e.getPaymentMethodId(), method == null ? null : method.getName(),
+                    e.getClientId(), e.getUpdatedAt());
         }
 
         private static <T> Map<Long, T> byId(List<T> rows, Function<T, Long> id) {
