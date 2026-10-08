@@ -1,7 +1,9 @@
 package com.dailyrupi.expense;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+import com.dailyrupi.expense.ExpenseDtos.ExpenseChanges;
 import com.dailyrupi.expense.ExpenseDtos.ExpensePage;
 import com.dailyrupi.expense.ExpenseDtos.ExpenseRequest;
 import com.dailyrupi.expense.ExpenseDtos.ExpenseResponse;
@@ -10,6 +12,7 @@ import com.dailyrupi.expense.ExpenseDtos.PaymentMethodOption;
 
 import jakarta.validation.Valid;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,6 +45,13 @@ public class ExpenseController {
     public ExpensePage list(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return service.list(page, size);
+    }
+
+    /** For the Android app's sync: everything when {@code since} is left out, otherwise only what changed. */
+    @GetMapping("/expenses/changes")
+    public ExpenseChanges changes(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime since) {
+        return service.changes(since);
     }
 
     @GetMapping("/expenses/summary")

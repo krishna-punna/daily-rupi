@@ -8,6 +8,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
@@ -33,6 +35,20 @@ public class Expense {
 
     @Column(length = 255)
     private String note;
+
+    /** Made by the Android app for a new expense, so a retried create is saved once; null from the web. */
+    @Column(name = "client_id", length = 36, unique = true, updatable = false)
+    private String clientId;
+
+    /** When the expense last changed, for the app's fetch of changes since its last sync. */
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    @PreUpdate
+    void touch() {
+        updatedAt = LocalDateTime.now();
+    }
 
     public Long getId() {
         return id;
@@ -76,5 +92,17 @@ public class Expense {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 }
