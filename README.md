@@ -118,8 +118,8 @@ change you are logged out and log in again with the new password.
 | PATCH | `/api/master-data/{level}/{id}/status` | USER | JSON `active`: true or false |
 | DELETE | `/api/master-data/{level}/{id}` | USER | Delete if nothing depends on it |
 | GET | `/api/payment-methods` | USER | Active payment methods |
-| GET | `/api/expenses?page=&size=` | USER | Expenses, newest first |
-| GET | `/api/expenses/changes?since=` | USER | For the Android app's sync: expenses changed and ids deleted since a local date-time (everything when `since` is left out), plus `nextSince` to pass next time |
+| GET | `/api/expenses?page=&size=&from=&to=` | USER | Expenses, newest first; optional `from` and `to` (yyyy-MM-dd, both inclusive) limit it to those days |
+| GET | `/api/expenses/changes?since=&from=` | USER | For the Android app's sync: expenses changed and ids deleted since a local date-time (everything when `since` is left out, or everything spent on or after `from` when that is given too), plus `nextSince` to pass next time |
 | POST | `/api/expenses` | USER | JSON `itemId`, `paymentMethodId`, `amount`, `spentAt`, `note`, optional `clientId` (a UUID from the app; a retried create returns the saved expense, and one already deleted gets 410) |
 | PUT | `/api/expenses/{id}` | USER | Edit an expense |
 | DELETE | `/api/expenses/{id}` | USER | Delete an expense |

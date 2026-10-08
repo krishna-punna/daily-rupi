@@ -66,24 +66,37 @@ public class ExpenseService {
     }
 
     @Transactional(readOnly = true)
-    public ExpensePage list(int page, int size) {
+    public ExpensePage list(int page, int size, LocalDate from, LocalDate to) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "from must not be after to");
+        }
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 100);
-        Page<Expense> result = expenses.findAll(PageRequest.of(safePage, safeSize,
-                Sort.by(Sort.Order.desc("spentAt"), Sort.Order.desc("id"))));
+        PageRequest request = PageRequest.of(safePage, safeSize,
+                Sort.by(Sort.Order.desc("spentAt"), Sort.Order.desc("id")));
+        Page<Expense> result = from == null && to == null
+                ? expenses.findAll(request)
+                : expenses.findBySpentAtGreaterThanEqualAndSpentAtLessThan(
+                        from == null ? LocalDateTime.of(1900, 1, 1, 0, 0) : from.atStartOfDay(),
+                        to == null ? LocalDateTime.of(9999, 1, 1, 0, 0) : to.plusDays(1).atStartOfDay(), request);
         Lookup lookup = new Lookup();
         return new ExpensePage(result.getContent().stream().map(lookup::toResponse).toList(),
                 safePage, safeSize, result.getTotalElements());
     }
 
     @Transactional(readOnly = true)
-    public ExpenseChanges changes(LocalDateTime since) {
+    /**
+     * {@code from} only narrows the first, full fetch. Later calls return every change, so an expense
+     * moved to an older day still reaches the phone, which then drops it.
+     */
+    public ExpenseChanges changes(LocalDateTime since, LocalDate from) {
         LocalDateTime nextSince = LocalDateTime.now().minusSeconds(SYNC_OVERLAP_SECONDS);
         Lookup lookup = new Lookup();
         if (since == null) {
-            List<ExpenseResponse> all = expenses.findAll(Sort.by(Sort.Order.asc("id"))).stream()
-                    .map(lookup::toResponse).toList();
-            return new ExpenseChanges(nextSince, all, List.of());
+            List<Expense> rows = from == null
+                    ? expenses.findAll(Sort.by(Sort.Order.asc("id")))
+                    : expenses.findBySpentAtGreaterThanEqualOrderByIdAsc(from.atStartOfDay());
+            return new ExpenseChanges(nextSince, rows.stream().map(lookup::toResponse).toList(), List.of());
         }
         List<ExpenseResponse> changed = expenses.findByUpdatedAtGreaterThanEqualOrderByUpdatedAtAscIdAsc(since)
                 .stream().map(lookup::toResponse).toList();

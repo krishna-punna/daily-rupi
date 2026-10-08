@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
@@ -58,8 +59,13 @@ class ExpenseSyncTest {
     }
 
     private static String expenseJson(long itemId, long paymentMethodId, String amount, String clientId) {
+        return expenseJson(itemId, paymentMethodId, amount, clientId, LocalDateTime.now().minusHours(1));
+    }
+
+    private static String expenseJson(long itemId, long paymentMethodId, String amount, String clientId,
+            LocalDateTime spentAt) {
         return "{\"itemId\":" + itemId + ",\"paymentMethodId\":" + paymentMethodId + ",\"amount\":" + amount
-                + ",\"spentAt\":\"" + LocalDateTime.now().minusHours(1).truncatedTo(ChronoUnit.MINUTES) + "\""
+                + ",\"spentAt\":\"" + spentAt.truncatedTo(ChronoUnit.MINUTES) + "\""
                 + (clientId == null ? "" : ",\"clientId\":\"" + clientId + "\"") + "}";
     }
 
@@ -141,5 +147,33 @@ class ExpenseSyncTest {
         mvc.perform(json(post("/api/expenses"), expenseJson(item, payment, "20", deletedClientId)))
                 .andExpect(status().isGone())
                 .andExpect(jsonPath("$.code").value("DELETED"));
+    }
+
+    @Test
+    void listAndFirstFetchCanBeLimitedToDays() throws Exception {
+        long item = item("Days");
+        long payment = paymentMethod();
+        LocalDate today = LocalDate.now();
+        LocalDate old = today.minusDays(20);
+
+        long recent = id(mvc.perform(json(post("/api/expenses"), expenseJson(item, payment, "7", null)))
+                .andReturn().getResponse().getContentAsString());
+        long older = id(mvc.perform(json(post("/api/expenses"),
+                        expenseJson(item, payment, "8", null, old.atTime(10, 0))))
+                .andReturn().getResponse().getContentAsString());
+
+        mvc.perform(get("/api/expenses").param("from", old.toString()).param("to", old.toString()).param("size", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[*].id", hasItem((int) older)))
+                .andExpect(jsonPath("$.content[*].id", not(hasItem((int) recent))))
+                .andExpect(jsonPath("$.content[*].spentAt", org.hamcrest.Matchers.everyItem(
+                        org.hamcrest.Matchers.startsWith(old.toString()))));
+        mvc.perform(get("/api/expenses").param("from", today.toString()).param("to", old.toString()))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(get("/api/expenses/changes").param("from", today.minusDays(6).toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.expenses[*].id", hasItem((int) recent)))
+                .andExpect(jsonPath("$.expenses[*].id", not(hasItem((int) older))));
     }
 }
