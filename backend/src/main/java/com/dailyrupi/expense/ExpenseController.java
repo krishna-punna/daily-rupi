@@ -1,5 +1,6 @@
 package com.dailyrupi.expense;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -41,17 +42,25 @@ public class ExpenseController {
         return service.paymentMethodOptions();
     }
 
+    /** Newest first; {@code from} and {@code to} (both inclusive, optional) limit it to those days. */
     @GetMapping("/expenses")
     public ExpensePage list(@RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return service.list(page, size);
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return service.list(page, size, from, to);
     }
 
-    /** For the Android app's sync: everything when {@code since} is left out, otherwise only what changed. */
+    /**
+     * For the Android app's sync: everything when {@code since} is left out, otherwise only what changed.
+     * With no {@code since}, {@code from} returns only expenses spent on or after that day, so the phone can
+     * start with just the last week.
+     */
     @GetMapping("/expenses/changes")
     public ExpenseChanges changes(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime since) {
-        return service.changes(since);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime since,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from) {
+        return service.changes(since, from);
     }
 
     @GetMapping("/expenses/summary")
