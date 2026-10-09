@@ -54,7 +54,8 @@ npm install
 npm start
 ```
 
-Open `http://localhost:4200`. The dev server forwards `/api` calls to the backend,
+Open `http://localhost:4200`. On Windows, double-click `start-frontend.bat` in the repository root instead; it
+runs `npm install` the first time and then `npm start`. The dev server forwards `/api` calls to the backend,
 so the browser only ever talks to one origin.
 
 | Screen | What you can do |
