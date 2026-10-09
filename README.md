@@ -38,6 +38,12 @@ and reports come next.
 Flyway creates the tables on first start. The API listens on `http://127.0.0.1:8080`
 and is not reachable from other devices.
 
+On Windows, `start-backend.bat` in the repository root starts the backend for the
+Android app instead: it listens on all network interfaces (`0.0.0.0`) so a phone on
+the same Wi-Fi can reach it, and sets `COOKIE_SECURE=false` so logins over plain http
+keep their session. Set `DB_USERNAME` and `DB_PASSWORD` as Windows user environment
+variables first, then double-click the file.
+
 ## Run the screens
 
 With the backend running, in a second terminal (Node.js 20.19 or newer):
@@ -48,7 +54,9 @@ npm install
 npm start
 ```
 
-Open `http://localhost:4200`. The dev server forwards `/api` calls to the backend,
+Open `http://localhost:4200`. On Windows, double-click `start-frontend.bat` in the repository root instead; it
+runs `npm install` the first time and then `npm start -- --host 0.0.0.0`, so the screens
+are also reachable from other devices at `http://<PC's IP>:4200`. The dev server forwards `/api` calls to the backend,
 so the browser only ever talks to one origin.
 
 | Screen | What you can do |
