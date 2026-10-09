@@ -55,7 +55,8 @@ npm start
 ```
 
 Open `http://localhost:4200`. On Windows, double-click `start-frontend.bat` in the repository root instead; it
-runs `npm install` the first time and then `npm start`. The dev server forwards `/api` calls to the backend,
+runs `npm install` the first time and then `npm start -- --host 0.0.0.0`, so the screens
+are also reachable from other devices at `http://<PC's IP>:4200`. The dev server forwards `/api` calls to the backend,
 so the browser only ever talks to one origin.
 
 | Screen | What you can do |
