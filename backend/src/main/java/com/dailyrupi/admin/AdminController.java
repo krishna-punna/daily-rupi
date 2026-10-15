@@ -2,7 +2,7 @@ package com.dailyrupi.admin;
 
 import java.util.List;
 
-import com.dailyrupi.audit.AuditLog;
+import com.dailyrupi.admin.AdminDtos.AuditEntry;
 import com.dailyrupi.audit.AuditLogRepository;
 
 import org.springframework.data.domain.PageRequest;
@@ -26,11 +26,11 @@ public class AdminController {
     }
 
     @GetMapping("/audit-log")
-    public List<AuditLog> auditLog(@RequestParam(defaultValue = "0") int page,
+    public List<AuditEntry> auditLog(@RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 200);
         return auditLog.findAll(PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "id")))
-                .getContent();
+                .getContent().stream().map(AuditEntry::from).toList();
     }
 }

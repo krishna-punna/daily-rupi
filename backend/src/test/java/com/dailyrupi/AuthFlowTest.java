@@ -112,8 +112,14 @@ class AuthFlowTest {
                 .andExpect(jsonPath("$.roles[0]").value("ADMIN"))
                 .andExpect(jsonPath("$.roles[1]").value("USER")));
 
+        // Same six fields the endpoint has always returned, so admin clients see no change.
         mvc.perform(get("/api/admin/audit-log").session(fresh)).andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].event").value("LOGIN_SUCCESS"));
+                .andExpect(jsonPath("$[0].event").value("LOGIN_SUCCESS"))
+                .andExpect(jsonPath("$[0].id").isNumber())
+                .andExpect(jsonPath("$[0].username").value("admin"))
+                .andExpect(jsonPath("$[0].detail").hasJsonPath())
+                .andExpect(jsonPath("$[0].ipAddress").hasJsonPath())
+                .andExpect(jsonPath("$[0].createdAt").isString());
     }
 
     @Test
