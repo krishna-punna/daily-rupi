@@ -1,3 +1,4 @@
+package com.dailyrupi;
 
 public class Bad {
     @Autowired private Object repo;
